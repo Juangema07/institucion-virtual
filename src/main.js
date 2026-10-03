@@ -61,7 +61,7 @@ function roleItems(role) {
   return [...common, ["usuarios","Usuarios","◎","Comunidad institucional"]];
 }
 
-const APP_DOWNLOAD_URL = "${APP_DOWNLOAD_URL}";
+const APP_DOWNLOAD_URL = "https://github.com/Juangema07/institucion-virtual/releases/download/alpha-latest/app-debug.apk";
 
 function sectionTitle(id) {
   const labels = {
@@ -284,7 +284,7 @@ function updateConnectionBadge(){
 }
 async function installApp(){
   if(window.__ivInstallPrompt){await window.__ivInstallPrompt.prompt();window.__ivInstallPrompt=null;return;}
-  window.open("${APP_DOWNLOAD_URL}","_blank","noopener");
+  window.open(APP_DOWNLOAD_URL,"_blank","noopener");
 }
 async function syncPending(){
   const api=import.meta.env.VITE_API_URL;
