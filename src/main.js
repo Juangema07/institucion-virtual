@@ -7,7 +7,7 @@ const DEMO_USERS = {
   estudiante: { password: "estudiante123", name: "Estudiante Demo", role: "Estudiante" }
 };
 
-const defaultState = {
+const defaultState = { users: [], syncQueue: [],
   user: null,
   notes: [{ id: 1, title: "Mi primera nota", body: "Bienvenido a Institución Virtual 0.1 Alpha." }],
   exams: [{
@@ -35,7 +35,14 @@ function loadState() {
   try { return { ...defaultState, ...JSON.parse(localStorage.getItem("iv_state") || "{}") }; }
   catch { return structuredClone(defaultState); }
 }
-function save() { localStorage.setItem("iv_state", JSON.stringify(state)); }
+function save(mutation=null) {
+  if (mutation) state.syncQueue.push({ id: Date.now()+"-"+Math.random(), at:new Date().toISOString(), mutation });
+  localStorage.setItem("iv_state", JSON.stringify(state));
+}
+function allUsers() {
+  return [...Object.entries(DEMO_USERS).map(([username,u])=>({username,...u})), ...(state.users||[])];
+}
+
 
 function escapeHtml(value="") {
   return String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
@@ -57,16 +64,16 @@ function render() {
         <div class="brand"><div class="logo">IV</div><div><b>Institución Virtual</b><small>0.1 Alpha</small></div></div>
         <div class="user-card"><strong>${escapeHtml(state.user.name)}</strong><span>${state.user.role}</span></div>
         <nav>${items.map(([id,label]) => `<button class="${currentSection===id?"active":""}" data-section="${id}">${label}</button>`).join("")}</nav>
-        <button id="logout" class="logout">Cerrar sesión</button>
+        <button id="installBtn" class="secondary compact">Instalar</button><button id="logout" class="logout">Cerrar sesión</button>
       </aside>
       <main class="main">
-        <header><div><span class="eyebrow">Institución Virtual</span><h1>${items.find(x=>x[0]===currentSection)?.[1] || "Inicio"}</h1></div><span class="status"><i></i> ${navigator.onLine ? "En línea" : "Sin conexión · Offline"}</span></header>
+        <header><div><span class="eyebrow">Institución Virtual</span><h1>${items.find(x=>x[0]===currentSection)?.[1] || "Inicio"}</h1></div><span id="connectionBadge" class="status"><i></i> ${navigator.onLine ? "En línea" : "Sin conexión · Offline"}</span></header>
         <section id="content"></section>
       </main>
     </div>`;
   document.querySelectorAll("[data-section]").forEach(b=>b.onclick=()=>{currentSection=b.dataset.section; render();});
-  document.querySelector("#logout").onclick=()=>{state.user=null; save(); render();};
-  renderSection();
+  document.querySelector("#logout").onclick=()=>{state.user=null; save({type:"session.logout"}); render();}; document.querySelector("#installBtn").onclick=installApp;
+  renderSection(); updateConnectionBadge();
 }
 
 function renderLogin() {
@@ -79,7 +86,7 @@ function renderLogin() {
         <form id="loginForm">
           <label>Usuario<input id="username" placeholder="ej. estudiante" autocomplete="username" required></label>
           <label>Contraseña<input id="password" type="password" placeholder="••••••••" required></label>
-          <button class="primary">Entrar</button>
+          <button class="primary" type="submit">Entrar</button><button type="button" class="secondary" id="registerBtn">Crear cuenta local</button>
           <button type="button" class="secondary" id="googleBtn">Continuar con Google</button>
           <small id="loginMsg"></small>
         </form>
@@ -88,12 +95,21 @@ function renderLogin() {
     </main>`;
   document.querySelector("#loginForm").onsubmit=e=>{
     e.preventDefault();
-    const u=DEMO_USERS[document.querySelector("#username").value.trim().toLowerCase()];
+    const username=document.querySelector("#username").value.trim().toLowerCase(); const u=allUsers().find(x=>x.username===username);
     const p=document.querySelector("#password").value;
     if(!u || u.password!==p){document.querySelector("#loginMsg").textContent="Usuario o contraseña incorrectos.";return;}
-    state.user={name:u.name,role:u.role,username:document.querySelector("#username").value.trim().toLowerCase()}; save(); currentSection="inicio"; render();
+    state.user={name:u.name,role:u.role,username}; save({type:"session.login",username}); currentSection="inicio"; render();
   };
-  document.querySelector("#googleBtn").onclick=()=>document.querySelector("#loginMsg").textContent="Google OAuth se conectará en la versión con servidor.";
+  document.querySelector("#registerBtn").onclick=()=>{
+    const username=prompt("Nuevo usuario (3-30 caracteres):");
+    const password=prompt("Contraseña (mínimo 6 caracteres):");
+    if(!username||!password||password.length<6){document.querySelector("#loginMsg").textContent="Datos inválidos.";return;}
+    const clean=username.trim().toLowerCase();
+    if(allUsers().some(x=>x.username===clean)){document.querySelector("#loginMsg").textContent="Ese usuario ya existe.";return;}
+    state.users.push({username:clean,password,name:clean,role:"Estudiante"});
+    state.user={username:clean,name:clean,role:"Estudiante"}; save({type:"user.create",username:clean}); render();
+  };
+  document.querySelector("#googleBtn").onclick=()=>document.querySelector("#loginMsg").textContent="Google OAuth queda preparado como proveedor; falta configurar el servidor OAuth real.";
 }
 
 function renderSection() {
@@ -148,15 +164,27 @@ function files(){return `
 function users(){return `<div class="panel"><h3>Jerarquía institucional</h3><div class="role-grid">${["Rector","Coordinador","Docente","Estudiante"].map((r,i)=>`<article><span>0${i+1}</span><h3>${r}</h3><p>${r==="Rector"?"Gestión institucional":r==="Coordinador"?"Gestión de áreas y cursos":r==="Docente"?"Cursos, evaluaciones y asistencia":"Cursos, tareas y resultados"}</p></article>`).join("")}</div></div>`; }
 
 function bindSection(){
-  document.querySelectorAll("[data-delete-note]").forEach(b=>b.onclick=()=>{state.notes=state.notes.filter(n=>n.id!=b.dataset.deleteNote);save();renderSection();});
-  document.querySelectorAll("[data-note-title]").forEach(i=>i.oninput=()=>{const n=state.notes.find(n=>n.id==i.dataset.noteTitle);n.title=i.value;save();});
-  document.querySelectorAll("[data-note-body]").forEach(i=>i.oninput=()=>{const n=state.notes.find(n=>n.id==i.dataset.noteBody);n.body=i.value;save();});
-  document.querySelector("#newNote")?.addEventListener("click",()=>{state.notes.unshift({id:Date.now(),title:"Nueva nota",body:""});save();renderSection();});
+  document.querySelectorAll("[data-delete-note]").forEach(b=>b.onclick=()=>{state.notes=state.notes.filter(n=>n.id!=b.dataset.deleteNote);save({type:"note.delete",id:b.dataset.deleteNote});renderSection();});
+  document.querySelectorAll("[data-note-title]").forEach(i=>i.oninput=()=>{const n=state.notes.find(n=>n.id==i.dataset.noteTitle);n.title=i.value;save({type:"note.update",id:n.id});});
+  document.querySelectorAll("[data-note-body]").forEach(i=>i.oninput=()=>{const n=state.notes.find(n=>n.id==i.dataset.noteBody);n.body=i.value;save({type:"note.update",id:n.id});});
+  document.querySelector("#newNote")?.addEventListener("click",()=>{state.notes.unshift({id:Date.now(),title:"Nueva nota",body:""});save({type:"note.create"});renderSection();});
   document.querySelector("#newExam")?.addEventListener("click",()=>{
     const title=prompt("Nombre del examen:","Nuevo examen"); if(!title)return;
-    const text=prompt("Pregunta:","Escribe la primera pregunta"); if(!text)return;
-    const opts=prompt("Opciones separadas por |","Opción A|Opción B|Opción C").split("|");
-    state.exams.push({id:Date.now(),title,subject:"General",questions:[{type:"single",text,options:opts,answer:0}]});save();renderSection();
+    const subject=prompt("Materia:","General")||"General";
+    const duration=Math.max(1,Number(prompt("Duración en minutos:","30"))||30);
+    const questions=[];
+    while(true){
+      const text=prompt("Pregunta (Cancelar para terminar):"); if(!text)break;
+      const type=(prompt("Tipo: single / multiple / text","single")||"single").toLowerCase();
+      if(type==="text"){questions.push({type:"text",text,points:1,answer:""});continue;}
+      const options=(prompt("Opciones separadas por |","Opción A|Opción B|Opción C")||"").split("|").map(x=>x.trim()).filter(Boolean);
+      if(options.length<2)continue;
+      const raw=prompt(type==="multiple"?"Índices correctos separados por coma":"Índice correcto","0");
+      const answer=type==="multiple"?(raw||"0").split(",").map(Number):Number(raw||0);
+      questions.push({type:type==="multiple"?"multiple":"single",text,options,answer,points:1});
+    }
+    if(!questions.length){alert("El examen necesita al menos una pregunta.");return;}
+    state.exams.push({id:Date.now(),title,subject,duration,questions});save({type:"exam.create",title});renderSection();
   });
   document.querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>{activeExam=state.exams.find(e=>e.id==b.dataset.take);renderSection();});
   document.querySelector("#backExams")?.addEventListener("click",()=>{activeExam=null;renderSection();});
@@ -169,7 +197,7 @@ function bindSection(){
 document.addEventListener("visibilitychange",()=>{
   if(activeExam && document.hidden){
     state.examIncidents.push({examId:activeExam.id,type:"visibility-change",at:new Date().toISOString()});
-    save();
+    save({type:"exam.incident",examId:activeExam.id});
     const badge=document.querySelector("#incidentBadge");
     if(badge) badge.textContent="Incidentes: "+state.examIncidents.filter(x=>x.examId===activeExam.id).length;
   }
@@ -179,3 +207,45 @@ window.addEventListener("online",render);
 
 if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
 render();
+
+
+// --- Alpha exam protection / sync helpers ---
+let examLocked=false;
+function updateConnectionBadge(){
+  const el=document.querySelector("#connectionBadge"); if(!el)return;
+  el.innerHTML="<i></i> "+(navigator.onLine?"En línea":"Sin conexión · Offline")+(state.syncQueue?.length?" · "+state.syncQueue.length+" pendientes":"");
+}
+async function installApp(){
+  if(window.__ivInstallPrompt){await window.__ivInstallPrompt.prompt();window.__ivInstallPrompt=null;return;}
+  alert("En web usa el menú del navegador para instalar la aplicación. Windows y Android usan los artefactos de CI.");
+}
+async function syncPending(){
+  const api=import.meta.env.VITE_API_URL;
+  if(!navigator.onLine||!api||!state.syncQueue?.length)return;
+  try{
+    const r=await fetch(api.replace(/\/$/,"")+"/sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:state.user,changes:state.syncQueue})});
+    if(!r.ok)throw new Error("sync");
+    state.syncQueue=[];localStorage.setItem("iv_state",JSON.stringify(state));updateConnectionBadge();
+  }catch{}
+}
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();window.__ivInstallPrompt=e;});
+window.addEventListener("online",()=>{updateConnectionBadge();syncPending();});
+window.addEventListener("offline",updateConnectionBadge);
+document.addEventListener("visibilitychange",()=>{
+  if(activeExam&&document.hidden){
+    state.examIncidents.push({examId:activeExam.id,type:"visibility-change",at:new Date().toISOString()});
+    save({type:"exam.incident",examId:activeExam.id,reason:"visibility-change"});
+    if(state.user?.role==="Estudiante") lockCurrentExam("visibility-change");
+  }
+});
+window.addEventListener("blur",()=>{if(activeExam&&state.user?.role==="Estudiante")lockCurrentExam("window-blur");});
+document.addEventListener("fullscreenchange",()=>{if(activeExam&&!document.fullscreenElement&&state.user?.role==="Estudiante")lockCurrentExam("fullscreen-exit");});
+function lockCurrentExam(reason){
+  if(examLocked)return; examLocked=true;
+  state.examIncidents.push({examId:activeExam.id,type:reason,at:new Date().toISOString()});
+  save({type:"exam.lock",examId:activeExam.id,reason});
+  document.querySelectorAll("#examForm input,#examForm textarea,#examForm button").forEach(x=>x.disabled=true);
+  const badge=document.querySelector("#incidentBadge"); if(badge)badge.textContent="Evaluación bloqueada · "+reason;
+}
+if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(()=>{});
+syncPending();
