@@ -1,4 +1,4 @@
-# Institución Virtual — 0.1 Alpha
+# Institución Virtual — 0.2 Alpha
 
 Primera alpha funcional de Institución Virtual.
 
@@ -43,3 +43,7 @@ npm run mobile:sync
 El flujo oficial de CI está en `.github/workflows/build.yml`. Cada push a `main` genera el despliegue web y los artefactos de Windows y Android.
 
 > Todavía no hay sincronización real nube/LAN ni cuentas remotas. La Alpha conserva datos localmente; la siguiente etapa conectará una API y una base de datos para que los cambios de contenido/datos se compartan entre dispositivos.
+
+
+## 0.2
+La Alpha añade cuentas locales, cola de sincronización preparada, constructor de preguntas de varios tipos, duración de examen y protección frente a pérdida de visibilidad/foco. Google OAuth y la nube real requieren configurar un backend; no se simulan como conectados. El modo de pantalla dividida no puede detectarse de forma universal en todos los dispositivos.
