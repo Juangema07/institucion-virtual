@@ -52,25 +52,16 @@ function roleItems(role) {
   const common = [
     ["inicio","Inicio","⌂","Resumen general"],
     ["notas","Libreta","▤","Notas y apuntes"],
-    ["archivos","Archivos","□","Documentos"]
-  ];
-  if (role === "Estudiante") return [...common,
     ["examenes","Exámenes","✓","Evaluaciones"],
-    ["calificaciones","Calificaciones","◒","Resultados"],
-    ["asistencia","Asistencia","◷","Registro"]
+    ["calificaciones",role === "Docente" ? "Planilla" : "Calificaciones","◒",role === "Docente" ? "Notas de estudiantes" : "Mis resultados"],
+    ["asistencia","Asistencia","◷","Registro académico"],
+    ["archivos","Archivos","□","Documentos y materiales"]
   ];
-  if (role === "Docente") return [...common,
-    ["examenes","Exámenes","✓","Evaluaciones"],
-    ["calificaciones","Planilla","◒","Calificaciones"],
-    ["asistencia","Asistencia","◷","Asistencia"]
-  ];
-  return [...common,
-    ["examenes","Exámenes","✓","Evaluaciones"],
-    ["calificaciones","Calificaciones","◒","Calificaciones"],
-    ["asistencia","Asistencia","◷","Asistencia"],
-    ["usuarios","Usuarios","◎","Comunidad"]
-  ];
+  if (role === "Estudiante") return common;
+  return [...common, ["usuarios","Usuarios","◎","Comunidad institucional"]];
 }
+
+const APP_DOWNLOAD_URL = "${APP_DOWNLOAD_URL}";
 
 function sectionTitle(id) {
   const labels = {
@@ -96,13 +87,27 @@ function render() {
           <div class="avatar">${escapeHtml((state.user.name||"U").slice(0,1).toUpperCase())}</div>
           <div class="user-meta"><strong>${escapeHtml(state.user.name)}</strong><span>${escapeHtml(state.user.role)}</span></div>
         </div>
-        <div class="nav-label">MENÚ PRINCIPAL</div>
-        <nav class="main-nav">${items.map(([id,label,icon,desc]) => `
+        <div class="nav-label">PRINCIPAL</div>
+        <nav class="main-nav">${items.slice(0,1).map(([id,label,icon,desc]) => `
           <button class="nav-item ${currentSection===id?"active":""}" data-section="${id}" title="${desc}">
             <span class="nav-icon">${icon}</span><span class="nav-copy"><b>${label}</b><small>${desc}</small></span>
           </button>`).join("")}</nav>
+        <div class="nav-label nav-label-section">ACADÉMICO</div>
+        <nav class="main-nav">${items.slice(1,4).map(([id,label,icon,desc]) => `
+          <button class="nav-item ${currentSection===id?"active":""}" data-section="${id}" title="${desc}">
+            <span class="nav-icon">${icon}</span><span class="nav-copy"><b>${label}</b><small>${desc}</small></span>
+          </button>`).join("")}</nav>
+        <div class="nav-label nav-label-section">RECURSOS</div>
+        <nav class="main-nav">${items.slice(4,6).map(([id,label,icon,desc]) => `
+          <button class="nav-item ${currentSection===id?"active":""}" data-section="${id}" title="${desc}">
+            <span class="nav-icon">${icon}</span><span class="nav-copy"><b>${label}</b><small>${desc}</small></span>
+          </button>`).join("")}</nav>
+        ${items[6] ? `<div class="nav-label nav-label-section">GESTIÓN</div>
+        <nav class="main-nav"><button class="nav-item ${currentSection===items[6][0]?"active":""}" data-section="${items[6][0]}" title="${items[6][3]}">
+          <span class="nav-icon">${items[6][2]}</span><span class="nav-copy"><b>${items[6][1]}</b><small>${items[6][3]}</small></span>
+        </button></nav>` : ""}
         <div class="sidebar-bottom">
-          <a class="download-card" href="https://github.com/Juangema07/institucion-virtual/releases/download/alpha-latest/app-debug.apk" target="_blank" rel="noreferrer">
+          <a class="download-card" href="${APP_DOWNLOAD_URL}" target="_blank" rel="noreferrer">
             <span class="download-icon">↓</span><span><b>Descargar APK</b><small>Android · compilación actual</small></span>
           </a>
           <button id="installBtn" class="secondary compact">Instalar esta app</button>
@@ -136,6 +141,7 @@ function renderLogin() {
   document.querySelector("#app").innerHTML = `
     <main class="login">
       <div class="login-card">
+        <div class="login-app-banner"><div><b>App Android disponible</b><span>Instálala y continúa desde tu teléfono.</span></div><a class="primary" href="${APP_DOWNLOAD_URL}" target="_blank" rel="noreferrer">Descargar APK</a></div>
         <div class="login-brand"><div class="logo big">IV</div><div><span class="eyebrow">CAMPUS DIGITAL</span><b>Institución Virtual</b></div></div>
         <h1>Tu institución, en un solo lugar.</h1>
         <p>Accede desde web, Android o Windows y conserva tu espacio de estudio.</p>
@@ -278,7 +284,7 @@ function updateConnectionBadge(){
 }
 async function installApp(){
   if(window.__ivInstallPrompt){await window.__ivInstallPrompt.prompt();window.__ivInstallPrompt=null;return;}
-  window.open("https://github.com/Juangema07/institucion-virtual/releases/download/alpha-latest/app-debug.apk","_blank","noopener");
+  window.open("${APP_DOWNLOAD_URL}","_blank","noopener");
 }
 async function syncPending(){
   const api=import.meta.env.VITE_API_URL;
