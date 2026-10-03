@@ -9,7 +9,33 @@
     <title>Institución Virtual · 0.1 Alpha</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <main style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:system-ui,sans-serif;background:#070c18;color:#e5e7eb">
+        <div style="max-width:520px;text-align:center">
+          <div style="font-size:44px;font-weight:800;margin-bottom:12px">IV</div>
+          <h1 style="margin:0 0 8px">Institución Virtual</h1>
+          <p style="margin:0;color:#94a3b8">Cargando el campus digital…</p>
+        </div>
+      </main>
+    </div>
+    <script>
+      window.addEventListener("error", function (event) {
+        var app = document.getElementById("app");
+        if (!app) return;
+        app.innerHTML =
+          '<main style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:system-ui,sans-serif;background:#070c18;color:#e5e7eb">' +
+          '<div style="max-width:620px;text-align:center">' +
+          '<div style="font-size:44px;font-weight:800;margin-bottom:12px">IV</div>' +
+          '<h1 style="margin:0 0 8px">Institución Virtual</h1>' +
+          '<p style="margin:0 0 16px;color:#fca5a5">La aplicación no pudo iniciar correctamente.</p>' +
+          '<button onclick="location.reload()" style="padding:11px 16px;border:0;border-radius:10px;cursor:pointer">Recargar</button>' +
+          '</div></main>';
+        console.error(event.error || event.message);
+      });
+      window.addEventListener("unhandledrejection", function (event) {
+        console.error(event.reason);
+      });
+    </script>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>
