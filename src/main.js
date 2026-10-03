@@ -61,7 +61,7 @@ function roleItems(role) {
   return [...common, ["usuarios","Usuarios","◎","Comunidad institucional"]];
 }
 
-const APP_DOWNLOAD_URL = "https://github.com/Juangema07/institucion-virtual/releases/download/alpha-latest/app-debug.apk";
+const APP_DOWNLOAD_URL = "./downloads/app-debug.apk";
 
 function sectionTitle(id) {
   const labels = {
