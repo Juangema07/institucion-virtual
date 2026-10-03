@@ -1,9 +1,9 @@
 import { defineConfig } from "vite";
 
-const isGitHubPages = process.env.GITHUB_ACTIONS === "true";
+const base = process.env.VITE_BASE_PATH || "./";
 
 export default defineConfig({
-  // GitHub Pages needs the repository path; packaged APK/EXE uses relative assets.
-  base: isGitHubPages ? "/institucion-virtual/" : "./",
+  // Pages uses /institucion-virtual/; APK/EXE use relative assets.
+  base,
   build: { target: "es2020" }
 });
