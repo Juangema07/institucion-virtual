@@ -7,11 +7,46 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "desktop": "electron ."
+    "desktop": "electron .",
+    "dist:win": "npm run build && electron-builder --win --x64",
+    "mobile:sync": "npm run build && cap sync android",
+    "mobile:apk": "npm run mobile:sync && cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/core": "^7.4.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.4",
     "electron": "^38.0.0",
+    "electron-builder": "^26.0.12",
     "vite": "^7.0.0"
   },
-  "main": "electron/main.cjs"
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.institucionvirtual.app",
+    "productName": "Institución Virtual",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
 }
