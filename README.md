@@ -2,8 +2,13 @@
 
 Primera alpha funcional de Institución Virtual.
 
+## Plataformas
+- Web/PWA desplegada automáticamente con GitHub Pages.
+- Windows: instalador **.exe** generado por GitHub Actions.
+- Android: **APK** generado por GitHub Actions.
+- Las tres plataformas salen del mismo código de `main`: cada cambio publicado vuelve a construir web, EXE y APK.
+
 ## Incluye
-- Web PWA instalable y funcional offline.
 - Inicio de sesión local de demostración.
 - Roles: Rector, Coordinador, Docente y Estudiante.
 - Menú adaptado al rol.
@@ -11,32 +16,30 @@ Primera alpha funcional de Institución Virtual.
 - Creación y resolución de exámenes básicos.
 - Calificaciones y planilla.
 - Asistencia.
-- Subida/listado de archivos en el almacenamiento local del navegador.
-- Registro transparente de eventos de salida/cambio de pestaña durante un examen.
-- Preparación para empaquetado desktop con Electron.
+- Archivos en Alpha.
+- Registro transparente de cambios de visibilidad durante un examen.
+- PWA/offline y empaquetado desktop/mobile.
 
 ## Demo
-Usuarios locales:
 - rector / rector123
 - coordinador / coord123
 - docente / docente123
 - estudiante / estudiante123
 
-> Son cuentas de demostración. No se usan para producción.
+Son cuentas de demostración; no son para producción.
 
-## Ejecutar
-La versión web puede abrirse mediante un servidor estático local. Para desarrollo:
-
+## Desarrollo
 ```bash
 npm install
 npm run dev
 ```
 
-Para desktop:
-
+## Builds locales
 ```bash
-npm install
-npm run desktop
+npm run dist:win
+npm run mobile:sync
 ```
 
-La autenticación Google, base de datos remota, sincronización LAN/nube y seguridad de producción se incorporarán después.
+El flujo oficial de CI está en `.github/workflows/build.yml`. Cada push a `main` genera el despliegue web y los artefactos de Windows y Android.
+
+> Todavía no hay sincronización real nube/LAN ni cuentas remotas. La Alpha conserva datos localmente; la siguiente etapa conectará una API y una base de datos para que los cambios de contenido/datos se compartan entre dispositivos.
