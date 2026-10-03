@@ -272,7 +272,6 @@ document.addEventListener("visibilitychange",()=>{
 window.addEventListener("offline",render);
 window.addEventListener("online",render);
 
-if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(()=>{});
 render();
 
 
@@ -314,7 +313,6 @@ function lockCurrentExam(reason){
   document.querySelectorAll("#examForm input,#examForm textarea,#examForm button").forEach(x=>x.disabled=true);
   const badge=document.querySelector("#incidentBadge"); if(badge)badge.textContent="Evaluación bloqueada · "+reason;
 }
-if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(()=>{});
 syncPending();
 
 window.addEventListener("hashchange",()=>{if(state.user){currentSection=location.hash.slice(1)||"inicio";render();}});
