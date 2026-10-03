@@ -102,7 +102,7 @@ function render() {
             <span class="nav-icon">${icon}</span><span class="nav-copy"><b>${label}</b><small>${desc}</small></span>
           </button>`).join("")}</nav>
         <div class="sidebar-bottom">
-          <a class="download-card" href="https://github.com/Juangema07/institucion-virtual/actions/workflows/build.yml" target="_blank" rel="noreferrer">
+          <a class="download-card" href="https://github.com/Juangema07/institucion-virtual/releases/download/alpha-latest/app-debug.apk" target="_blank" rel="noreferrer">
             <span class="download-icon">↓</span><span><b>Descargar APK</b><small>Android · compilación actual</small></span>
           </a>
           <button id="installBtn" class="secondary compact">Instalar esta app</button>
@@ -278,7 +278,7 @@ function updateConnectionBadge(){
 }
 async function installApp(){
   if(window.__ivInstallPrompt){await window.__ivInstallPrompt.prompt();window.__ivInstallPrompt=null;return;}
-  window.open("https://github.com/Juangema07/institucion-virtual/actions/workflows/build.yml","_blank","noopener");
+  window.open("https://github.com/Juangema07/institucion-virtual/releases/download/alpha-latest/app-debug.apk","_blank","noopener");
 }
 async function syncPending(){
   const api=import.meta.env.VITE_API_URL;
