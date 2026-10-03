@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -65,6 +65,11 @@ jobs:
       - run: npx cap sync android
       - run: chmod +x android/gradlew
       - run: cd android && ./gradlew assembleDebug
+      - name: Publish APK release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create alpha-latest android/app/build/outputs/apk/debug/app-debug.apk --title "Institución Virtual 0.1 Alpha" --notes "APK de la compilación más reciente." --prerelease --target ${{ github.sha }} || gh release upload alpha-latest android/app/build/outputs/apk/debug/app-debug.apk --clobber
       - uses: actions/upload-artifact@v4
         with:
           name: institucion-virtual-android-apk
