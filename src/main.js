@@ -28,7 +28,7 @@ const defaultState = { users: [], syncQueue: [],
 };
 
 let state = loadState();
-let currentSection = "inicio";
+let currentSection = location.hash.slice(1) || "inicio";
 let activeExam = null;
 
 function loadState() {
@@ -49,30 +49,86 @@ function escapeHtml(value="") {
 }
 
 function roleItems(role) {
-  const common = [["inicio","Inicio"],["notas","Libreta"],["archivos","Archivos"]];
-  if (role === "Estudiante") return [...common,["examenes","Exámenes"],["calificaciones","Calificaciones"],["asistencia","Asistencia"]];
-  if (role === "Docente") return [...common,["examenes","Exámenes"],["calificaciones","Planilla"],["asistencia","Asistencia"]];
-  return [...common,["examenes","Exámenes"],["calificaciones","Calificaciones"],["asistencia","Asistencia"],["usuarios","Usuarios"]];
+  const common = [
+    ["inicio","Inicio","⌂","Resumen general"],
+    ["notas","Libreta","▤","Notas y apuntes"],
+    ["archivos","Archivos","□","Documentos"]
+  ];
+  if (role === "Estudiante") return [...common,
+    ["examenes","Exámenes","✓","Evaluaciones"],
+    ["calificaciones","Calificaciones","◒","Resultados"],
+    ["asistencia","Asistencia","◷","Registro"]
+  ];
+  if (role === "Docente") return [...common,
+    ["examenes","Exámenes","✓","Evaluaciones"],
+    ["calificaciones","Planilla","◒","Calificaciones"],
+    ["asistencia","Asistencia","◷","Asistencia"]
+  ];
+  return [...common,
+    ["examenes","Exámenes","✓","Evaluaciones"],
+    ["calificaciones","Calificaciones","◒","Calificaciones"],
+    ["asistencia","Asistencia","◷","Asistencia"],
+    ["usuarios","Usuarios","◎","Comunidad"]
+  ];
+}
+
+function sectionTitle(id) {
+  const labels = {
+    inicio:"Inicio", notas:"Libreta", archivos:"Archivos", examenes:"Exámenes",
+    calificaciones:"Calificaciones", asistencia:"Asistencia", usuarios:"Usuarios"
+  };
+  return labels[id] || "Inicio";
 }
 
 function render() {
   if (!state.user) return renderLogin();
   const items = roleItems(state.user.role);
+  const current = items.find(x=>x[0]===currentSection) || items[0];
+  currentSection = current[0];
   document.querySelector("#app").innerHTML = `
-    <div class="shell">
+    <div class="app-shell">
       <aside class="sidebar">
-        <div class="brand"><div class="logo">IV</div><div><b>Institución Virtual</b><small>0.1 Alpha</small></div></div>
-        <div class="user-card"><strong>${escapeHtml(state.user.name)}</strong><span>${state.user.role}</span></div>
-        <nav>${items.map(([id,label]) => `<button class="${currentSection===id?"active":""}" data-section="${id}">${label}</button>`).join("")}</nav>
-        <button id="installBtn" class="secondary compact">Instalar</button><button id="logout" class="logout">Cerrar sesión</button>
+        <div class="brand">
+          <div class="logo">IV</div>
+          <div><b>Institución Virtual</b><small>Campus digital · Alpha</small></div>
+        </div>
+        <div class="user-card">
+          <div class="avatar">${escapeHtml((state.user.name||"U").slice(0,1).toUpperCase())}</div>
+          <div class="user-meta"><strong>${escapeHtml(state.user.name)}</strong><span>${escapeHtml(state.user.role)}</span></div>
+        </div>
+        <div class="nav-label">MENÚ PRINCIPAL</div>
+        <nav class="main-nav">${items.map(([id,label,icon,desc]) => `
+          <button class="nav-item ${currentSection===id?"active":""}" data-section="${id}" title="${desc}">
+            <span class="nav-icon">${icon}</span><span class="nav-copy"><b>${label}</b><small>${desc}</small></span>
+          </button>`).join("")}</nav>
+        <div class="sidebar-bottom">
+          <a class="download-card" href="https://github.com/Juangema07/institucion-virtual/actions/workflows/build.yml" target="_blank" rel="noreferrer">
+            <span class="download-icon">↓</span><span><b>Descargar APK</b><small>Android · compilación actual</small></span>
+          </a>
+          <button id="installBtn" class="secondary compact">Instalar esta app</button>
+          <button id="logout" class="logout">Cerrar sesión</button>
+        </div>
       </aside>
       <main class="main">
-        <header><div><span class="eyebrow">Institución Virtual</span><h1>${items.find(x=>x[0]===currentSection)?.[1] || "Inicio"}</h1></div><span id="connectionBadge" class="status"><i></i> ${navigator.onLine ? "En línea" : "Sin conexión · Offline"}</span></header>
+        <header class="topbar">
+          <div class="topbar-title"><span class="eyebrow">Campus digital</span><h1>${sectionTitle(currentSection)}</h1><p>${current[3]}</p></div>
+          <div class="topbar-actions">
+            <span id="connectionBadge" class="status"><i></i> ${navigator.onLine ? "En línea" : "Sin conexión"}</span>
+            <div class="account-chip"><span class="avatar small">${escapeHtml((state.user.name||"U").slice(0,1).toUpperCase())}</span><span>${escapeHtml(state.user.name)}</span></div>
+          </div>
+        </header>
         <section id="content"></section>
       </main>
     </div>`;
-  document.querySelectorAll("[data-section]").forEach(b=>b.onclick=()=>{currentSection=b.dataset.section; render();});
-  document.querySelector("#logout").onclick=()=>{state.user=null; save({type:"session.logout"}); render();}; document.querySelector("#installBtn").onclick=installApp;
+  document.querySelectorAll("[data-section]").forEach(b=>b.onclick=()=>{
+    currentSection=b.dataset.section;
+    history.replaceState(null,"","#"+currentSection);
+    render();
+  });
+  document.querySelector("#logout").onclick=()=>{
+    state.user=null; save({type:"session.logout"}); history.replaceState(null,"","#inicio"); render();
+  };
+  document.querySelector("#installBtn").onclick=installApp;
   renderSection(); updateConnectionBadge();
 }
 
@@ -80,25 +136,30 @@ function renderLogin() {
   document.querySelector("#app").innerHTML = `
     <main class="login">
       <div class="login-card">
-        <div class="logo big">IV</div>
-        <span class="eyebrow">0.1 Alpha</span><h1>Institución Virtual</h1>
-        <p>Una plataforma educativa que también funciona sin Internet.</p>
+        <div class="login-brand"><div class="logo big">IV</div><div><span class="eyebrow">CAMPUS DIGITAL</span><b>Institución Virtual</b></div></div>
+        <h1>Tu institución, en un solo lugar.</h1>
+        <p>Accede desde web, Android o Windows y conserva tu espacio de estudio.</p>
         <form id="loginForm">
           <label>Usuario<input id="username" placeholder="ej. estudiante" autocomplete="username" required></label>
-          <label>Contraseña<input id="password" type="password" placeholder="••••••••" required></label>
-          <button class="primary" type="submit">Entrar</button><button type="button" class="secondary" id="registerBtn">Crear cuenta local</button>
+          <label>Contraseña<input id="password" type="password" placeholder="••••••••" autocomplete="current-password" required></label>
+          <button class="primary" type="submit">Entrar al campus</button>
+          <div class="login-divider"><span>o</span></div>
+          <button type="button" class="secondary" id="registerBtn">Crear cuenta local</button>
           <button type="button" class="secondary" id="googleBtn">Continuar con Google</button>
           <small id="loginMsg"></small>
         </form>
+        <div class="login-note">Tus datos de esta Alpha se guardan localmente. La sincronización entre dispositivos se activa al conectar el backend de cuentas.</div>
         <details><summary>Usuarios de demostración</summary><p>rector / rector123<br>coordinador / coord123<br>docente / docente123<br>estudiante / estudiante123</p></details>
       </div>
     </main>`;
   document.querySelector("#loginForm").onsubmit=e=>{
     e.preventDefault();
-    const username=document.querySelector("#username").value.trim().toLowerCase(); const u=allUsers().find(x=>x.username===username);
+    const username=document.querySelector("#username").value.trim().toLowerCase();
+    const u=allUsers().find(x=>x.username===username);
     const p=document.querySelector("#password").value;
     if(!u || u.password!==p){document.querySelector("#loginMsg").textContent="Usuario o contraseña incorrectos.";return;}
-    state.user={name:u.name,role:u.role,username}; save({type:"session.login",username}); currentSection="inicio"; render();
+    state.user={name:u.name,role:u.role,username}; save({type:"session.login",username});
+    currentSection=location.hash.slice(1)||"inicio"; render();
   };
   document.querySelector("#registerBtn").onclick=()=>{
     const username=prompt("Nuevo usuario (3-30 caracteres):");
@@ -109,7 +170,7 @@ function renderLogin() {
     state.users.push({username:clean,password,name:clean,role:"Estudiante"});
     state.user={username:clean,name:clean,role:"Estudiante"}; save({type:"user.create",username:clean}); render();
   };
-  document.querySelector("#googleBtn").onclick=()=>document.querySelector("#loginMsg").textContent="Google OAuth queda preparado como proveedor; falta configurar el servidor OAuth real.";
+  document.querySelector("#googleBtn").onclick=()=>document.querySelector("#loginMsg").textContent="Google OAuth requiere configurar el proveedor OAuth del servidor.";
 }
 
 function renderSection() {
@@ -205,7 +266,7 @@ document.addEventListener("visibilitychange",()=>{
 window.addEventListener("offline",render);
 window.addEventListener("online",render);
 
-if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
+if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(()=>{});
 render();
 
 
@@ -217,7 +278,7 @@ function updateConnectionBadge(){
 }
 async function installApp(){
   if(window.__ivInstallPrompt){await window.__ivInstallPrompt.prompt();window.__ivInstallPrompt=null;return;}
-  alert("En web usa el menú del navegador para instalar la aplicación. Windows y Android usan los artefactos de CI.");
+  window.open("https://github.com/Juangema07/institucion-virtual/actions/workflows/build.yml","_blank","noopener");
 }
 async function syncPending(){
   const api=import.meta.env.VITE_API_URL;
@@ -249,3 +310,5 @@ function lockCurrentExam(reason){
 }
 if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(()=>{});
 syncPending();
+
+window.addEventListener("hashchange",()=>{if(state.user){currentSection=location.hash.slice(1)||"inicio";render();}});
