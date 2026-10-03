@@ -36,7 +36,19 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build web
+      - name: Build web for GitHub Pages
+        env:
+          VITE_BASE_PATH: /institucion-virtual/
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Rebuild web with relative assets for Android
+        env:
+          VITE_BASE_PATH: ./
         run: npm run build
 
       - name: Setup Java
@@ -62,16 +74,10 @@ jobs:
           cd android
           ./gradlew assembleDebug --no-daemon
 
-      - name: Put APK in repository download folder and Pages site
+      - name: Put APK in repository download folder
         run: |
-          mkdir -p downloads dist/downloads
+          mkdir -p downloads
           cp android/app/build/outputs/apk/debug/app-debug.apk downloads/app-debug.apk
-          cp android/app/build/outputs/apk/debug/app-debug.apk dist/downloads/app-debug.apk
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
 
       - name: Commit APK to repository
         run: |
